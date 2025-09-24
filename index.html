@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스타트업을 위한 AI 프롬프트 빌더</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#e6f1fe',
+                            100: '#d0e5fd',
+                            200: '#a3cbfb',
+                            300: '#75b1fa',
+                            600: '#0d57b2',
+                            700: '#004ea2',
+                            800: '#004692',
+                            900: '#002987',
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .prompt-result {
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        .nav-item.active {
+            background-color: #0d57b2;
+            color: white;
+            font-weight: 700;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .adjective-chip {
+            @apply inline-block bg-primary-200 text-primary-800 rounded-full px-3 py-1 text-sm font-medium cursor-pointer transition-colors duration-200 hover:bg-primary-300;
+        }
+        .easter-egg-image {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            width: 300px;
+            max-width: 80%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            animation: bounceIn 0.8s ease-in-out;
+        }
+        @keyframes bounceIn {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(0.9); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .easter-egg-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            animation: fadeInOut 3s forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            10% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            90% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-8 md:mb-12">
+            <a href="#" id="main-header" class="block no-underline">
+                <h1 class="text-3xl sm:text-4xl font-bold text-primary-900">스타트업을 위한 AI 프롬프트 빌더</h1>
+            </a>
+            <p class="mt-3 text-lg text-stone-600 leading-normal">AI와 함께 성장하는 똑똑한 대표님을 위한 맞춤형 프롬프트 생성 도구입니다.</p>
+            <p class="text-sm text-stone-500 mt-1 leading-normal">강원창조경제혁신센터</p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            
+            <aside class="md:col-span-4 lg:col-span-3">
+                <div class="bg-white p-4 rounded-xl shadow-md sticky top-8">
+                    <h2 class="text-xl font-bold mb-6 border-b pb-2 text-primary-600 text-center">무엇을 도와드릴까요?</h2>
+                    <nav id="navigation" class="space-y-1 text-center"></nav>
+                </div>
+            </aside>
+
+            <section id="content-area" class="md:col-span-8 lg:col-span-9">
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-md min-h-[600px]">
+                    <div id="form-container"></div>
+                    <div id="result-container" class="mt-8"></div>
+                </div>
+            </section>
+        </main>
+        
+        <section class="mt-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <a href="https://chat.openai.com/" target="_blank" class="font-bold text-xl text-primary-700 mb-2 block hover:underline">
+                        <h3>ChatGPT</h3>
+                    </a>
+                    <p class="text-stone-700 leading-relaxed">글쓰기, 기획, 아이디어 발굴 등 범용적인 텍스트 작업에 최적화되어 있습니다. 마케팅 문구, 블로그 글 초안 작성에 유용합니다.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <a href="https://gemini.google.com/" target="_blank" class="font-bold text-xl text-primary-700 mb-2 block hover:underline">
+                        <h3>Gemini</h3>
+                    </a>
+                    <p class="text-stone-700 leading-relaxed">텍스트는 물론 이미지, 영상 등 다양한 형식의 정보를 동시에 처리할 수 있어, 복잡한 자료를 분석하거나 새로운 콘텐츠를 구상하는 데 효과적입니다.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <a href="https://www.perplexity.ai/" target="_blank" class="font-bold text-xl text-primary-700 mb-2 block hover:underline">
+                        <h3>Perplexity</h3>
+                    </a>
+                    <p class="text-stone-700 leading-relaxed">AI와 웹 검색을 결합하여 정확하고 신뢰성 높은 정보를 제공합니다. 시장 조사, 최신 트렌드 파악 등 사실 확인이 중요한 작업에 좋습니다.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <a href="https://liner.ai/" target="_blank" class="font-bold text-xl text-primary-700 mb-2 block hover:underline">
+                        <h3>Liner</p>
+                    </a>
+                    <p class="text-stone-700 leading-relaxed">웹 페이지나 PDF 문서의 핵심 내용을 빠르게 요약하고, 중요한 정보를 하이라이트해줍니다. 긴 자료를 효율적으로 검토할 때 유용합니다.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <a href="https://openai.com/dall-e-3" target="_blank" class="font-bold text-xl text-primary-700 mb-2 block hover:underline">
+                        <h3>DALL-E
+                    </a>
+                    <p class="text-stone-700 leading-relaxed">텍스트 설명을 기반으로 고품질 이미지를 생성합니다. 제품 홍보용 이미지, 로고 아이디어, 소셜 미디어 콘텐츠 제작에 활용할 수 있습니다.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <a href="https://www.canva.com/ai-assistant/" target="_blank" class="font-bold text-xl text-primary-700 mb-2 block hover:underline">
+                        <h3>Canva</h3>
+                    </a>
+                    <p class="text-stone-700 leading-relaxed">디자인 전문가가 아니어도 쉽게 카드뉴스, 전단지, 발표 자료 등을 만들 수 있습니다. AI 기반의 '매직 스튜디오' 기능을 활용해 디자인을 자동화할 수 있습니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mt-12">
+            <div id="accordion" class="bg-white rounded-xl shadow-md">
+                <button id="accordion-button" class="w-full flex justify-between items-center p-6 text-left text-xl font-bold text-primary-700">
+                    <span>좋은 프롬프트(AI 지시문)란?</span>
+                    <span id="accordion-icon" class="transform transition-transform duration-300">▼</span>
+                </button>
+                <div id="accordion-content" class="hidden p-6 border-t">
+                    <p class="mb-6 text-stone-600 leading-relaxed">AI는 프롬프트의 품질에 따라 전혀 다른 결과물을 만들어냅니다. 좋은 프롬프트를 만드는 4가지 핵심 요소를 기억하고 활용해보세요.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-primary-50 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg text-primary-800">1. 역할 부여</h3>
+                            <p class="text-stone-700 mt-1 leading-relaxed">AI에게 전문가 역할을 맡기면 더욱 정확하고 전문적인 답변을 얻을 수 있습니다.</p>
+                            <p class="mt-2 text-sm text-stone-500 leading-relaxed">예시: "뛰어난 카피라이터 역할을 맡아줘."</p>
+                        </div>
+                        <div class="bg-primary-50 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg text-primary-800">2. 명확한 지시</h3>
+                            <p class="text-stone-700 mt-1 leading-relaxed">모호한 표현보다는 구체적으로 무엇을 원하는지 명확하게 알려주세요.</p>
+                             <p class="mt-2 text-sm text-stone-500 leading-relaxed">예시: "강원도의 특색을 살린 로컬푸드 밀키트 마케팅 문구를 작성해줘."</p>
+                        </div>
+                        <div class="bg-primary-50 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg text-primary-800">3. 세부 정보</h3>
+                            <p class="text-stone-700 mt-1 leading-relaxed">결과물에 반드시 포함되어야 할 구체적인 내용을 명시해주세요.</p>
+                             <p class="mt-2 text-sm text-stone-500 leading-relaxed">예시: "친근한 말투를 사용하고, '#강원맛집' 해시태그를 포함시켜줘."</p>
+                        </div>
+                        <div class="bg-primary-50 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg text-primary-800">4. 목표 명시</h3>
+                            <p class="text-stone-700 mt-1 leading-relaxed">최종적으로 이 프롬프트와(과) 통해 얻고 싶은 결과가 무엇인지 알려주세요.</p>
+                             <p class="mt-2 text-sm text-stone-500 leading-relaxed">예시: "최종 목표는 인스타그램 팔로워를 늘리는 것입니다."</p>
+                        </div>
+                    </div>
+                    <div class="mt-8">
+                        <h4 class="font-bold text-lg mb-2 text-center">💡 실제 프롬프트 비교</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div class="border border-red-300 bg-red-50 p-4 rounded-lg">
+                                <h5 class="font-bold text-red-700">나쁜 프롬프트 👎</h5>
+                                <p class="mt-2 font-mono text-sm leading-relaxed">"강아지 사료에 대해 써줘."</p>
+                                <p class="mt-2 text-xs text-red-600 leading-relaxed">➡️ 너무 일반적이고 쓸모없는 정보.</p>
+                             </div>
+                             <div class="border border-green-300 bg-green-50 p-4 rounded-lg">
+                                <h5 class="font-bold text-green-700">좋은 프롬프트 👍</h5>
+                                <p class="mt-2 font-mono text-sm leading-relaxed">"반려동물 영양 전문가 역할을 맡아주세요. 유기농 강아지 사료의 장점을 설명하는 500자 블로그 글을 작성해주세요. 글에는 '건강한 소화'와 '풍부한 영양소' 키워드를 반드시 포함시켜주세요."</p>
+                                <p class="mt-2 text-xs text-green-600 leading-relaxed">➡️ 전문가의 시각으로 작성된, 타겟 고객에게 유용한 글.</p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center mt-12 pt-8 border-t">
+             <p class="text-stone-600 leading-relaxed">AI는 훌륭한 도구이지만, 가장 중요한 것은 대표님의 아이디어와 실행력입니다.</p>
+             <p class="mt-2 text-stone-600 leading-relaxed">프롬프트 빌더가 사업 운영에 도움이 되기를 바랍니다.</p>
+             <div class="mt-4">
+                 <p class="font-bold leading-relaxed">강원창조경제혁신센터</p>
+             </div>
+             <p class="text-sm text-stone-500 mt-1 leading-relaxed">© 강원창조경제혁신센터. 2025. All rights reserved.</p>
+        </footer>
+    </div>
+    <div id="easter-egg-container"></div>
+
+    <script>
+        // 페이지의 우클릭(contextmenu) 기본 동작을 막습니다.
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        const templates = {
+            marketing: {
+                title: '마케팅 및 콘텐츠 제작',
+                items: {
+                    productIntro: {
+                        name: '제품 또는 서비스<br>소개글',
+                        formTitle: '제품 또는 서비스 소개글',
+                        icon: '✍️',
+                        description: '인스타그램, 블로그, 쇼핑몰 상세 페이지 등에 활용할 수 있는 매력적인 소개 글을 만듭니다.',
+                        fields: [
+                            { id: 'productName', label: '제품 또는 서비스 이름', placeholder: '예: 춘천의 아늑한 북카페 \'책갈피\'' },
+                            { id: 'targetCustomer', label: '타겟 고객', placeholder: '예: 조용히 책 읽기를 좋아하는 20-30대 여성' },
+                            { id: 'keyFeatures', label: '핵심 장점 (3가지)', type: 'textarea', placeholder: '예: 감성적인 분위기, 무료 와이파이, 다양한 책', helpText: '보다 구체적인 답변을 얻기 위해, 3가지 이내로 핵심 키워드를 작성하는 것이 좋습니다.' },
+                            { 
+                                id: 'postNature', 
+                                label: '글의 성격', 
+                                type: 'select', 
+                                options: ['공식 웹사이트', '인스타그램', '블로그', '상세페이지'],
+                                helpText: '게시글이 사용될 플랫폼이나 목적을 선택해주세요.'
+                            },
+                            { id: 'toneAndManner', label: '글의 톤앤매너', placeholder: '예: 친근한 말투, 전문적인 말투', helpText: '보다 구체적인 답변을 얻기 위해, 3가지 이내로 핵심 키워드를 작성하는 것이 좋습니다.', 
+                            chips: ['친근한', '전문적인', '진솔한', '유머러스한', '감성적인', '강렬한', '따뜻한', '활기찬', '산뜻한', '매혹적인', '차분한', '고급스러운', '재미있는', '생생한', '명쾌한', '신뢰감 있는', '간결한', '다정한', '시적인', '솔직한', '포근한', '세련된', '유익한', '개성 있는', '역동적인', '트렌디한', '정성스러운', '혁신적인', '실용적인', '사랑스러운', '깨끗한'],
+                            chipText: '원하는 분위기의 단어를 클릭하거나 직접 입력하세요.' }
+                        ]
+                    },
+                    socialMedia: {
+                        name: '소셜 미디어 게시물 아이디어',
+                        icon: '📱',
+                        description: '보다 풍성한 콘텐츠를 위해 소셜 미디어 포스팅 아이디어를 얻을 수 있습니다.',
+                        fields: [
+                            { id: 'topic', label: '게시물 주제', placeholder: '예: \'로컬 크리에이터\' 사업 홍보' },
+                            { 
+                                id: 'postNature', 
+                                label: '게시물 성격', 
+                                type: 'select', 
+                                options: ['사회적 가치를 강조하는 아이디어', '사용자 경험을 강조하는 아이디어', '이벤트 및 프로모션을 위한 아이디어', '브랜드 스토리텔링을 위한 아이디어', '커뮤니티 및 소속감을 위한 아이디어'] 
+                            },
+                            { id: 'channel', label: '소셜 미디어 채널', type: 'select', options: ['인스타그램', '유튜브', '블로그', '네이버 밴드', '커뮤니티'] },
+                            { id: 'count', label: '필요한 아이디어 개수', type: 'select', options: ['1', '2', '3', '4', '5'], helpText: '아이디어의 품질을 향상시키기 위해 최대 5개까지 입력할 수 있습니다.' },
+                            { id: 'requiredContent', label: '포함할 내용 또는 해시태그', type: 'textarea', placeholder: '예: 강원도의 아름다운 경치, #강원여행 #로컬크리에이터' }
+                        ]
+                    },
+                    marketingSlogan: {
+                        name: '마케팅 슬로건',
+                        icon: '💡',
+                        description: '제품이나 서비스를 한 문장으로 강력하게 표현하는 슬로건을 만듭니다.',
+                        fields: [
+                             { id: 'productName', label: '제품 또는 서비스 이름', placeholder: '예: 춘천 닭갈비 밀키트' },
+                             { id: 'targetCustomer', label: '타겟 고객', placeholder: '예: 30대 맞벌이 부부' },
+                             { id: 'keyBenefit', label: '핵심 혜택', placeholder: '예: 집에서 간편하게 즐기는 춘천의 맛', helpText: '고객이 제품을 통해 얻는 이점이나 가치를 작성해주세요.' },
+                             { id: 'length', label: '슬로건 길이', type: 'select', options: ['짧고 간결하게 (5-10자)', '보통 (10-20자)', '길게 (20자 이상)'], helpText: '슬로건이 사용될 채널에 따라 길이를 선택하세요.' },
+                             { id: 'sloganCount', label: '슬로건 개수', type: 'select', options: ['1', '2', '3', '4', '5'], helpText: '아이디어의 품질을 향상시키기 위해 최대 5개까지 입력할 수 있습니다.' }
+                         ]
+                    },
+                    pressRelease: {
+                        name: '보도자료 작성',
+                        icon: '📰',
+                        description: '언론 홍보용 보도자료 초안을 작성합니다.',
+                        fields: [
+                            { id: 'aboutCompany', label: '회사 소개', type: 'textarea', placeholder: '예: 강원창조경제혁신센터는 지역 스타트업을 육성하고...' },
+                            { id: 'headline', label: '보도자료 제목', placeholder: '예: 강원창조경제혁신센터, \'농산물 밀키트\' 신규 사업 시작' },
+                            { 
+                                id: 'releaseType', 
+                                label: '보도자료 유형', 
+                                type: 'select', 
+                                options: ['신제품 또는 서비스 출시', '투자 유치', '전략적 파트너십 체결', '수상 또는 성과', '신규 지점 오픈', '새로운 기술 개발', '기타'],
+                                helpText: '가장 중요한 보도 가치가 무엇인지 선택해주세요.'
+                            },
+                            { id: 'keyContent', label: '핵심 보도 내용', type: 'textarea', placeholder: '예: 지역 농산물 소비 촉진을 위한 사업 시작, 참여 농가 모집 등' },
+                            { id: 'quote', label: '인용문', type: 'textarea', placeholder: '예: “새로운 서비스를 통해 고객들에게 더 나은 가치를 제공할 수 있어 기쁩니다.” (대표 김길동)', helpText: '대표나 담당자의 인용문을 입력하면 더욱 신뢰성 있는 보도자료를 만들 수 있습니다.' },
+                            { id: 'contact', label: '담당자 연락처', placeholder: '예: 02-123-4567, pr@startup.com', helpText: '언론사의 문의를 위한 연락처를 입력하세요.' }
+                        ]
+                    }
+                }
+            },
+            operation: {
+                title: '사업 계획 및 운영',
+                items: {
+                    customerService: {
+                        name: '고객 응대 스크립트',
+                        icon: '💬',
+                        description: '반복적인 고객 문의나 불만 사항에 효과적으로 대응할 수 있는 답변 스크립트를 제공합니다.',
+                        fields: [
+                            { 
+                                id: 'customerType', 
+                                label: '고객 유형', 
+                                type: 'select', 
+                                options: ['신규 고객', '재방문 고객', '단골 고객', '불만 고객', '문의 고객'] 
+                            },
+                            { 
+                                id: 'tone', 
+                                label: '응대 어조', 
+                                type: 'select', 
+                                options: ['친절하고 전문적인 어조', '공감하며 위로하는 어조', '확신을 주는 단호한 어조', '유쾌하고 활기찬 어조', '예의 바르고 정중한 어조'] 
+                            },
+                            { 
+                                id: 'situation', 
+                                label: '응대 상황', 
+                                placeholder: '예: 배송 지연에 대한 고객 불만' 
+                            },
+                            { 
+                                id: 'responseGoal', 
+                                label: '응대 목표', 
+                                placeholder: '예: 고객의 불만 해소 및 재구매 유도', 
+                                helpText: '보다 구체적인 답변을 얻기 위해, 3가지 이내로 응대 목표를 선정하는 것이 좋습니다.<br>예시를 클릭하거나 직접 입력하세요.', 
+                                chips: ['고객 만족도 향상', '긍정적 후기 유도', '재구매율 증가', '브랜드 이미지 개선', '불만 해소 및 진정', '고객 정보 수집', '제품 사용법 안내', '서비스 개선 의견 청취', '신규 서비스 소개', '신뢰 구축'] 
+                            },
+                            { 
+                                id: 'solution', 
+                                label: '문제 해결 방안', 
+                                placeholder: '예: 진심 어린 사과와 함께 배송 추적 정보 제공', 
+                                helpText: '보다 구체적인 답변을 얻기 위해, 3가지 이내의 방안을 선정하는 것이 좋습니다.<br>예시를 클릭하거나 직접 입력하세요.', 
+                                chips: ['신속한 사과 및 문제 해결', '보상 제공 (쿠폰, 적립금)', '상세한 상황 설명 및 이해 구하기', '재발 방지를 위한 노력', '맞춤형 솔루션 제안', '추가 문의 사항 확인', '담당자 연결', '환불/교환 절차 안내', '사후 관리 약속', '감사 메시지 전달', '적극적인 피드백 요청', '즉각적인 도움 제공']
+                            },
+                        ]
+                    },
+                    newBusiness: {
+                        name: '신제품 또는 신사업 아이디어',
+                        icon: '🌟',
+                        description: '새로운 사업 방향을 모색하거나 신규 아이템을 발굴하기 위한 아이디어를 얻습니다.',
+                        fields: [
+                            { id: 'field', label: '사업 분야 또는 주제', placeholder: '예: 강원도 특산물을 활용한 밀키트 사업' },
+                            { id: 'myExperience', label: '나의 경험 또는 경력', type: 'textarea', placeholder: '예: 10년간 요리사로 일한 경험', helpText: '자신의 경험과 경력을 포함하면 AI가 보다 더 구체적인 아이디어를 제안해 줍니다.' },
+                            { id: 'targetCustomer', label: '타겟 고객', placeholder: '예: 20-30대 1인 가구' },
+                            { 
+                                id: 'problemToSolve', 
+                                label: '핵심 아이디어', 
+                                placeholder: '예: 1인 가구의 건강한 식사 준비 어려움 해결',
+                                helpText: '새로운 사업으로 해결하고 싶은 핵심적인 가치를 입력해주세요.<br>보다 구체적인 답변을 얻기 위해, 3가지 이내로 선정하는 것이 좋습니다.',
+                                chips: ['친환경 제품', '구독 서비스', '맞춤형 솔루션', '지역 특화 콘텐츠', '플랫폼 개발', '온디맨드 서비스', 'AI 기반 자동화', '개인화 경험', '지속가능성', '친환경 솔루션', '개인 맞춤형 서비스', '구독형 비즈니스 모델', '온디맨드 플랫폼', 'ESG 경영 도입', '소셜 커머스 연계', '로컬 커뮤니티 강화']
+                            },
+                            { id: 'uniqueSellingProposition', label: '기존 시장과의 차별점', placeholder: '예: 10분 내 조리 가능한 간편함, 모든 재료 유기농' },
+                            { id: 'count', label: '필요한 아이디어 개수', type: 'select', options: ['1', '2', '3', '4', '5'], helpText: '아이디어의 품질을 향상시키기 위해 최대 5개까지 입력할 수 있습니다.' }
+                        ]
+                    },
+                    businessPlan: {
+                        name: '비즈니스 모델<br>수립하기',
+                        formTitle: '비즈니스 모델 수립하기',
+                        icon: '📄',
+                        description: '투자자, 협력사, 또는 내부 검토용으로 활용할 수 있도록 사업계획서의 초기 모델을 작성합니다.',
+                        fields: [
+                            { id: 'businessName', label: '창업명', placeholder: '예: 춘천의 아늑한 북카페 \'책갈피\'' },
+                            { id: 'businessSector', label: '창업 분야', placeholder: '예: F&B, IT, 문화예술' },
+                            { id: 'businessItem', label: '창업 아이템', placeholder: '예: 1인 가구용 밀키트 구독 서비스' },
+                            { id: 'customerSegments', label: '고객 세그먼트 (누구에게 가치를 제공하는가?)', type: 'textarea', placeholder: '예: 조용히 책 읽기를 좋아하는 20-30대 여성' },
+                            { id: 'valuePropositions', label: '가치 제안 (어떤 가치를 제공하는가?)', type: 'textarea', placeholder: '예: 감성적인 분위기, 다양한 독서 모임, 무료 와이파이' },
+                            { id: 'channels', label: '채널 (고객에게 어떻게 다가갈 것인가?)', type: 'textarea', placeholder: '예: 인스타그램, 블로그, 지역 커뮤니티' },
+                            { id: 'customerRelationships', label: '고객 관계 (고객과 어떻게 관계를 맺는가?)', type: 'textarea', placeholder: '예: 독서 모임, 정기적인 뉴스레터' },
+                            { id: 'revenueStreams', label: '수익원 (어떻게 수익을 창출하는가?)', type: 'textarea', placeholder: '예: 커피 및 음료 판매, 독서 모임 참가비' },
+                            { id: 'keyResources', label: '핵심 자원 (창업에 필요한 주요 자원은 무엇인가?)', type: 'textarea', placeholder: '예: 춘천의 아늑한 공간, 감각적인 인테리어, 엄선된 도서' },
+                            { id: 'keyActivities', label: '핵심 활동 (어떤 활동을 해야 하는가?)', type: 'textarea', placeholder: '예: 수제 커피 로스팅, 독서 모임 기획 및 운영, SNS 마케팅' },
+                            { id: 'keyPartnerships', label: '핵심 파트너십 (누구와 협력할 것인가?)', type: 'textarea', placeholder: '예: 동네 빵집, 지역 작가 커뮤니티' },
+                            { id: 'costStructure', label: '비용 구조 (주요 비용은 무엇인가?)', type: 'textarea', placeholder: '예: 임대료, 재료비, 인건비' },
+                            { id: 'businessBudget', label: '창업 예산', placeholder: '예: 5천만 원', helpText: '보다 구체적인 답변을 얻기 위해, 대략적인 창업 예산을 작성해주세요.' }
+                        ]
+                    }
+                }
+            },
+        };
+        // API 키를 여기에 입력하세요.
+        const API_KEY = "AIzaSyCzv_DDceSvLE4Ys0BM6O-GNcilxhl3r3w";
+        
+        // 이스터 에그(Easter Egg) 관련 코드
+        let easterEggKeySequence = '';
+        const requiredSequence = 'abcde';
+        const easterEggText = '하이하이하와유나이스미튜';
+        const easterEggContainer = document.getElementById('easter-egg-container');
+        const dragEasterEggImageUrl = "https://github.com/olnynlmaps-hash/hy00nj29/blob/main/%EC%A0%9C%EB%AA%A9%EC%9D%84%20%EC%9E%85%EB%A0%A5%ED%95%B4%EC%A3%BC%EC%84%B8%EC%9A%94.%20(2).png?raw=true";
+
+        function showEasterEgg() {
+            const textEl = document.createElement('div');
+            textEl.textContent = easterEggText;
+            textEl.classList.add('easter-egg-text');
+            easterEggContainer.appendChild(textEl);
+
+            setTimeout(() => {
+                textEl.remove();
+            }, 1000); // 1초 후 텍스트 제거
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('keyPartnerships') === document.activeElement) {
+                easterEggKeySequence += e.key.toLowerCase();
+                if (easterEggKeySequence.includes(requiredSequence)) {
+                    showEasterEgg();
+                    easterEggKeySequence = ''; // 이스터에그 발동 후 시퀀스 초기화
+                }
+            } else {
+                easterEggKeySequence = ''; // 다른 요소에 키 입력 시 시퀀스 초기화
+            }
+        });
+        
+        const navigationEl = document.getElementById('navigation');
+        const formContainerEl = document.getElementById('form-container');
+        const resultContainerEl = document.getElementById('result-container');
+        const accordionButton = document.getElementById('accordion-button');
+        const accordionContent = document.getElementById('accordion-content');
+        const accordionIcon = document.getElementById('accordion-icon');
+        const mainHeader = document.getElementById('main-header'); 
+
+        let currentTemplateId = null;
+
+        const promptTemplates = {
+            marketing_productIntro: (d) => `뛰어난 카피라이터 역할을 맡아주세요. '${d.postNature}'에 게시할 '${d.productName}'의 분위기와 장점을 소개하는 글을 작성해주세요. 타겟 고객은 '${d.targetCustomer}'입니다. '${d.keyFeatures}'을(를) 핵심 장점으로 포함시키고, '${d.toneAndManner}'(으)로 작성해주세요.`,
+            marketing_socialMedia: (d) => `전문 소셜 미디어 마케터 역할을 맡아주세요. '${d.channel}'에 올릴 '${d.topic}'에 대한 게시물 아이디어 ${d.count}개를 제안해주세요. 아이디어에는 '${d.requiredContent}'와(과) 같은 내용이 포함되면 좋겠습니다. 그리고 '${d.postNature}'의 성격을 강조해주세요.`,
+            marketing_slogan: (d) => `뛰어난 마케팅 전문가 역할을 맡아주세요. 제품 '${d.productName}'를 위한 마케팅 슬로건을 ${d.sloganCount}개 만들어주세요. 슬로건은 '${d.targetCustomer}'를 대상으로 하며, '${d.keyBenefit}'라는 핵심 혜택을 강조해야 합니다. '${d.length}'에 맞춰 작성해주세요.`,
+            marketing_pressRelease: (d) => `전문 홍보 담당자 역할을 맡아주세요. 언론 배포용 보도자료를 작성해주세요. 다음은 보도자료에 포함될 핵심 정보입니다. 제목: ${d.headline}\n유형: ${d.releaseType}\n핵심 내용: ${d.keyContent}\n인용문: ${d.quote}\n회사 소개: ${d.aboutCompany}\n담당자 연락처: ${d.contact}\n위 정보를 바탕으로 기자들이 쉽게 이해하고 기사화할 수 있도록 전문적이고 간결한 형식으로 보도자료를 작성해주세요.`,
+            operation_customerService: (d) => `전문 상담원 역할을 맡아주세요. 다음은 고객 문의에 대한 정보입니다.\n\n고객 유형: ${d.customerType}\n응대 상황: ${d.situation}\n응대 목표: ${d.responseGoal}\n문제 해결 방안: ${d.solution}\n응대 어조: ${d.tone}\n\n위 내용을 바탕으로 고객이 만족할 수 있도록 진심을 담아 메시지 스크립트를 작성해주세요.`,
+            operation_newBusiness: (d) => `전문적인 사업 개발자 역할을 맡아주세요. '${d.field}' 분야에서 새로운 사업 아이디어 ${d.count}개를 제안해주세요. \n사용자의 경험과 경력은 다음과 같습니다: ${d.myExperience}\n아이디어는 다음 사항들을 반드시 포함해야 합니다.\n\n1. **타겟 고객:** ${d.targetCustomer}\n2. **해결하려는 문제:** ${d.problemToSolve}\n3. **기존 시장과의 차별점:** ${d.uniqueSellingProposition}\n\n위 정보를 바탕으로 구체적이고 현실적인 사업 아이디어와 핵심 사업 모델에 대해 제안해주세요. 각 아이디어는 고유한 제목을 가지고 있어야 합니다.`,
+            operation_businessPlan: (d) => `전문 창업 기획자 역할을 맡아주세요. '${d.businessName}' 창업을 위한 사업계획서 초안을 상세하게 작성해주세요. 각 항목별로 자세한 설명을 덧붙여주세요.\n\n[창업 개요]\n창업 분야: ${d.businessSector}\n창업 아이템: ${d.businessItem}\n창업 예산: ${d.businessBudget}\n\n[비즈니스 모델 캔버스]\n\n1. 고객 세그먼트: ${d.customerSegments}\n2. 가치 제안: ${d.valuePropositions}\n3. 채널: ${d.channels}\n4. 고객 관계: ${d.customerRelationships}\n5. 수익원: ${d.revenueStreams}\n6. 핵심 자원: ${d.keyResources}\n7. 핵심 활동: ${d.keyActivities}\n8. 핵심 파트너십: ${d.keyPartnerships}\n9. 비용 구조: ${d.costStructure}\n\n위 내용을 바탕으로 창업의 핵심 내용을 논리적이고 구체적으로 풀어낸 사업계획서 초안을 작성해주시고, 이미지로 시각화해주세요.`
+        };
+
+        function renderNavigation() {
+            let html = '';
+            let isFirstCategory = true;
+            for (const categoryKey in templates) {
+                const category = templates[categoryKey];
+                
+                if (!isFirstCategory) {
+                    html += `<hr class="my-2 border-t border-stone-200">`;
+                }
+                const indentClass = (categoryKey === 'operation') ? 'pl-1' : '';
+                const categoryId = (categoryKey === 'operation') ? 'id="operation-category"' : '';
+                html += `<h3 ${categoryId} class="font-bold mt-2 mb-2 text-primary-900 text-xl text-left ${indentClass}">` + category.title + `</h3>`;
+                
+                for (const itemKey in category.items) {
+                    const item = category.items[itemKey];
+                    html += `<h4 class="text-base font-medium text-left"><a href="#" class="nav-item flex items-center w-full text-left p-2 rounded-md transition duration-200 hover:bg-primary-100 text-base" data-template-id="${categoryKey}.${itemKey}"><span class="mr-2">${item.icon}</span>${item.name}</a></h4>`;
+                }
+                isFirstCategory = false;
+            }
+            navigationEl.innerHTML = html;
+        }
+
+        function renderTemplate(templateId) {
+            currentTemplateId = templateId;
+            const [categoryKey, itemKey] = templateId.split('.');
+            const template = templates[categoryKey].items[itemKey];
+
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`[data-template-id="${templateId}"]`).classList.add('active');
+
+            let formHtml = `<div><h2 id="template-title" class="text-2xl font-bold text-primary-700"></h2>`;
+            formHtml += `<p class="mt-2 mb-6 text-stone-600 leading-normal">${template.description}</p>`;
+            formHtml += '<div class="space-y-4">';
+
+            template.fields.forEach(field => {
+                formHtml += `<div><label for="${field.id}" class="block text-sm font-medium text-stone-700 mb-1">${field.label}</label>`;
+                
+                if (field.helpText) {
+                    formHtml += `<p class="text-xs text-stone-500 mb-1 leading-normal">${field.helpText}</p>`;
+                }
+                
+                switch(field.type) {
+                    case 'textarea':
+                        formHtml += `<textarea id="${field.id}" name="${field.id}" rows="3" class="w-full p-2 border border-stone-300 rounded-md focus:ring-primary-500 focus:border-primary-500" placeholder="${field.placeholder || ''}"></textarea>`;
+                        break;
+                    case 'select':
+                        formHtml += `<select id="${field.id}" name="${field.id}" class="w-full p-2 border border-stone-300 rounded-md focus:ring-primary-500 focus:border-primary-500">`;
+                        field.options.forEach(option => {
+                            formHtml += `<option value="${option}">${option}</option>`;
+                        });
+                        formHtml += `</select>`;
+                        break;
+                    case 'number':
+                        formHtml += `<input type="number" id="${field.id}" name="${field.id}" class="w-full p-2 border border-stone-300 rounded-md focus:ring-primary-500 focus:border-primary-500" min="${field.min || ''}" max="${field.max || ''}" value="${field.value || ''}">`;
+                        break;
+                    default: 
+                        formHtml += `<input type="text" id="${field.id}" name="${field.id}" class="w-full p-2 border border-stone-300 rounded-md focus:ring-primary-500 focus:border-primary-500" placeholder="${field.placeholder || ''}">`;
+                }
+                 
+                if (field.chips) {
+                    if (field.chipText) {
+                        formHtml += `<p class="text-xs text-stone-500 mt-2 mb-2 leading-normal">${field.chipText}</p>`;
+                    }
+                    formHtml += `<div class="flex flex-wrap gap-2 mb-2">`;
+                    field.chips.forEach(chip => {
+                        formHtml += `<span class="adjective-chip">${chip}</span>`;
+                    });
+                    formHtml += `</div>`;
+                }
+                formHtml += `</div>`;
+            });
+
+            formHtml += '</div></div>';
+            formContainerEl.innerHTML = formHtml;
+            document.getElementById('template-title').textContent = template.formTitle || template.name;
+            
+            resultContainerEl.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-bold text-primary-700">생성된 프롬프트</h3>
+                    <div class="flex items-end justify-between mb-2">
+                        <p class="text-sm text-stone-500 leading-normal">아래 프롬프트를 복사하여 제품과 알맞는 AI Tool에 넣어 사용해보세요.</p>
+                        <button id="copy-button" class="bg-primary-700 text-white px-3 py-1 text-sm rounded-md hover:bg-primary-800 transition">복사</button>
+                    </div>
+                    <div class="bg-stone-100 p-4 rounded-md mt-2 min-h-[100px]">
+                        <pre id="prompt-output" class="prompt-result text-stone-800 font-mono text-sm"></pre>
+                    </div>
+                </div>
+            `;
+            
+            updatePrompt();
+
+            formContainerEl.querySelectorAll('input, textarea, select').forEach(el => {
+                el.addEventListener('input', updatePrompt);
+            });
+            
+            document.querySelectorAll('.adjective-chip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    const chipText = e.target.textContent;
+                    const fieldContainer = e.target.closest('div').parentElement; // Corrected: find the parent div
+                    const inputElement = fieldContainer.querySelector('input, textarea'); // Corrected: find the input within that parent
+                    
+                    if (inputElement) {
+                        const currentValues = inputElement.value.split(',').map(v => v.trim()).filter(v => v);
+                        if (!currentValues.includes(chipText)) {
+                            inputElement.value = currentValues.length > 0 ? `${currentValues.join(', ')}, ${chipText}` : chipText;
+                        }
+                    }
+                    updatePrompt();
+                });
+            });
+
+            document.getElementById('copy-button').addEventListener('click', copyPrompt);
+        }
+        
+        function updatePrompt() {
+            if (!currentTemplateId) return;
+            const [categoryKey, itemKey] = currentTemplateId.split('.');
+            const template = templates[categoryKey].items[itemKey];
+            
+            const data = {};
+            template.fields.forEach(field => {
+                const el = document.getElementById(field.id);
+                if (el) {
+                    data[field.id] = el.value || `[${field.label}]`;
+                }
+            });
+
+            const promptFunction = promptTemplates[`${categoryKey}_${itemKey}`];
+            if (promptFunction) {
+                const generatedPrompt = promptFunction(data);
+                const outputEl = document.getElementById('prompt-output');
+                if (outputEl) {
+                    outputEl.textContent = generatedPrompt;
+                }
+            }
+        }
+        
+        function copyPrompt() {
+            const promptText = document.getElementById('prompt-output').textContent;
+            const copyButton = document.getElementById('copy-button');
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(promptText).then(() => {
+                    copyButton.textContent = '복사 완료!';
+                    setTimeout(() => {
+                        copyButton.textContent = '복사';
+                    }, 2000);
+                }).catch(err => {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = promptText;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+
+                    copyButton.textContent = '복사 완료!';
+                    setTimeout(() => {
+                        copyButton.textContent = '복사';
+                    }, 2000);
+                    console.error('Failed to copy with navigator.clipboard. Trying fallback.', err);
+                });
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = promptText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                    document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                copyButton.textContent = '복사 완료!';
+                setTimeout(() => {
+                        copyButton.textContent = '복사';
+                    }, 2000);
+            }
+        }
+
+        navigationEl.addEventListener('click', (e) => {
+            if (e.target.closest('.nav-item')) {
+                e.preventDefault();
+                const templateId = e.target.closest('.nav-item').dataset.templateId;
+                renderTemplate(templateId);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        
+        mainHeader.addEventListener('click', (e) => {
+            e.preventDefault();
+            location.reload();
+        });
+
+        accordionButton.addEventListener('click', () => {
+            const isHidden = accordionContent.classList.contains('hidden');
+            accordionContent.classList.toggle('hidden');
+            accordionIcon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNavigation();
+            renderTemplate('marketing.productIntro');
+            
+            const operationCategory = document.getElementById('operation-category');
+            if (operationCategory) {
+                operationCategory.addEventListener('dragend', (e) => {
+                    const dragEggImage = document.createElement('img');
+                    dragEggImage.src = dragEasterEggImageUrl;
+                    dragEggImage.classList.add('easter-egg-image');
+                    easterEggContainer.appendChild(dragEggImage);
+
+                    setTimeout(() => {
+                        dragEggImage.remove();
+                    }, 2000); // 2초 후 이미지 제거
+                });
+            }
+        });
+    </script>
+</body>
+</html>
